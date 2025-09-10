@@ -13,7 +13,7 @@ It demonstrates **segment-based targeting, message queueing, async delivery, ret
 - **Queue:** Upstash Redis (`@upstash/redis`) for delivery jobs  
 - **Worker:** Node.js service consuming Redis queue  
 - **Auth:** JWT (simple Dev Login for local testing)  
-- **Vendor:** Simulator endpoint (random SENT/FAILED to mimic Twilio/Msg91/etc.)
+- **Vendor:** Simulator endpoint (random SENT/FAILED to mimic Twilio/Msg91/etc.)  
 
 ---
 

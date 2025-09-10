@@ -1,6 +1,6 @@
 # 📧 Mini CRM Campaigns (MERN + Redis Queue)
 
-A lightweight **CRM-like campaign system** built with the MERN stack + Upstash Redis.  
+A lightweight CRM-like campaign system built with the MERN stack + Upstash Redis.  
 It demonstrates **segment-based targeting, message queueing, async delivery, retry handling, and live campaign stats**.
 
 ---

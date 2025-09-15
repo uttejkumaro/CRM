@@ -14,7 +14,7 @@ async function start() {
 
   app.listen(PORT, () => console.log(`Server listening ${PORT}`));
 }
-
+app.use(cors({ origin: process.env.FRONTEND_URL || "*", credentials: true }));
 start().catch(err => {
   console.error(err);
   process.exit(1);

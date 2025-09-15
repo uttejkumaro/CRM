@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import app from "./app.js";
 
 const PORT = process.env.PORT || 4000;
+app.use(cors({ origin: process.env.FRONTEND_URL || "*", credentials: true }));
 
 async function start() {
   await mongoose.connect(process.env.MONGODB_URI);

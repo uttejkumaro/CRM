@@ -14,7 +14,19 @@ async function start() {
 
   app.listen(PORT, () => console.log(`Server listening ${PORT}`));
 }
-app.use(cors({ origin: process.env.FRONTEND_URL || "*", credentials: true }));
+
+import("./services/ingestWorker.js")
+  .then(() => console.log("Ingest worker started inside backend service"))
+  .catch(err => console.error("Ingest worker failed:", err));
+
+import("./services/deliveryWorker.js")
+  .then(() => console.log("Delivery worker started inside backend service"))
+  .catch(err => console.error("Delivery worker failed:", err));
+
+import("./services/receiptWorker.js")
+  .then(() => console.log("Receipt worker started inside backend service"))
+  .catch(err => console.error("Receipt worker failed:", err));
+
 start().catch(err => {
   console.error(err);
   process.exit(1);

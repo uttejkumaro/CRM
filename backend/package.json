@@ -1,16 +1,13 @@
-{
+﻿{
   "name": "crm-backend",
   "version": "1.0.0",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "worker": "node src/services/deliveryWorker.js",
-    "ingest-worker": "node src/services/ingestWorker.js",
-    "receipt-worker": "node src/services/receiptWorker.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run ingest-worker\" \"npm run worker\" \"npm run receipt-worker\""
-  },
+  "start": "node src/server.js",
+  "dev": "nodemon src/server.js"
+}
+,
   "dependencies": {
     "@upstash/redis": "^1.20.0",
     "axios": "^1.4.0",

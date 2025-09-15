@@ -28,7 +28,7 @@ app.use(bodyParser.json());
 // docs (Swagger UI)
 app.use("/api/docs", docsRoutes);
 app.use("/api/auth", authMe);
-
+app.use(cors({ origin: process.env.FRONTEND_URL || "*", credentials: true }));
 // api routes
 app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);

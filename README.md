@@ -20,7 +20,7 @@ It demonstrates **segment-based targeting, message queueing, async delivery, ret
 
 ## Architecture
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/2940b4b0-4e87-4366-960f-e653298af136" />
-### Flow
+
 
 1. **Frontend (React UI)**  
    👉 User creates a new campaign

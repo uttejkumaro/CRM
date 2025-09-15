@@ -1,14 +1,8 @@
-// frontend/src/api.js
-import axios from "axios";
-
-// production fallback — use your real backend URL here
-const PROD_FALLBACK = "https://crm-backend-6ujz.onrender.com";
-
-const baseURL = import.meta.env.VITE_API_URL
-  || (import.meta.env.PROD ? PROD_FALLBACK : "http://localhost:4000");
+﻿import axios from "axios";
+import { BASE_URL } from "./config.js";
 
 const api = axios.create({
-  baseURL,
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 

@@ -52,7 +52,7 @@ frontend/dist
 frontend/.vite
 frontend/tailwind.config.cjs
 frontend/vite.config.js
-frontend/src/index.css
+
 
 # -------------------------------
 # Backend (Express / Node)

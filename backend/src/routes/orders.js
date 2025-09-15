@@ -1,21 +1,21 @@
 ﻿import express from "express";
 import redis from "../services/redisClient.js";
 import requireAuth from "../middleware/authMiddleware.js";
-import Customer from "../models/Customer.js";
+import Order from "../models/Order.js";
 
 const router = express.Router();
 
 // Enqueue ingestion
 router.post("/bulk", requireAuth, async (req, res) => {
   try {
-    const customers = Array.isArray(req.body.customers) ? req.body.customers : null;
-    if (!customers?.length) return res.status(400).json({ error: "Provide customers: []" });
+    const orders = Array.isArray(req.body.orders) ? req.body.orders : null;
+    if (!orders?.length) return res.status(400).json({ error: "Provide orders: []" });
 
-    await Promise.all(customers.map(c =>
-      redis.lpush("ingest-queue", JSON.stringify({ type: "customer", payload: c }))
+    await Promise.all(orders.map(o =>
+      redis.lpush("ingest-queue", JSON.stringify({ type: "order", payload: o }))
     ));
 
-    res.status(202).json({ accepted: customers.length });
+    res.status(202).json({ accepted: orders.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -24,20 +24,20 @@ router.post("/bulk", requireAuth, async (req, res) => {
 // Direct insert (dev only)
 router.post("/ingest/direct", requireAuth, async (req, res) => {
   try {
-    const customers = Array.isArray(req.body.customers) ? req.body.customers : null;
-    if (!customers) return res.status(400).json({ error: "Provide customers: []" });
+    const orders = Array.isArray(req.body.orders) ? req.body.orders : null;
+    if (!orders) return res.status(400).json({ error: "Provide orders: []" });
 
-    const docs = await Customer.insertMany(customers);
+    const docs = await Order.insertMany(orders);
     res.json({ inserted: docs.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// List customers
+// NEW: GET /api/orders - list recent orders (protected)
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const docs = await Customer.find().limit(50);
+    const docs = await Order.find().sort({ createdAt: -1 }).limit(100).lean();
     res.json(docs);
   } catch (err) {
     res.status(500).json({ error: err.message });

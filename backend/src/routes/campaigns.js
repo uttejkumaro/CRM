@@ -1,14 +1,16 @@
 ﻿import express from "express";
 const router = express.Router();
+
 import Campaign from "../models/Campaign.js";
 import CommLog from "../models/CommLog.js";
 import Segment from "../models/Segment.js";
 import Customer from "../models/Customer.js";
 import redis from "../services/redisClient.js";
 import { buildMongoQuery } from "../services/ruleCompiler.js";
+import requireAuth from "../middleware/authMiddleware.js";
 
-// Create campaign
-router.post("/", async (req, res) => {
+// Create campaign (protected)
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { title, messageTemplate, segmentId } = req.body;
     const segment = await Segment.findById(segmentId);
@@ -38,8 +40,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// List campaigns
-router.get("/", async (req, res) => {
+// List campaigns (protected - only logged-in users can view campaigns)
+router.get("/", requireAuth, async (req, res) => {
   try {
     const list = await Campaign.find().sort({ createdAt: -1 }).limit(200);
     res.json(list);
@@ -48,8 +50,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Campaign logs
-router.get("/:id/logs", async (req, res) => {
+// Campaign logs (protected)
+router.get("/:id/logs", requireAuth, async (req, res) => {
   try {
     const logs = await CommLog.find({ campaignId: req.params.id }).limit(500);
     res.json(logs);
@@ -58,8 +60,8 @@ router.get("/:id/logs", async (req, res) => {
   }
 });
 
-// Retry a comm log: mark PENDING, increment attempt, re-enqueue
-router.post("/:campaignId/logs/:logId/retry", async (req, res) => {
+// Retry a comm log: mark PENDING, increment attempt, re-enqueue (protected)
+router.post("/:campaignId/logs/:logId/retry", requireAuth, async (req, res) => {
   try {
     const { campaignId, logId } = req.params;
     const log = await CommLog.findById(logId);

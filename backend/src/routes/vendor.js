@@ -1,59 +1,52 @@
 ﻿import express from "express";
-import CommLog from "../models/CommLog.js";
-import Campaign from "../models/Campaign.js";
+import redis from "../services/redisClient.js";
 
 const router = express.Router();
 
-// Vendor endpoint that receives a send request (simulator). It will asynchronously update the comm log (simulating callback).
+/**
+ * Vendor send endpoint (simulator).
+ * This route still simulates async delivery by calling back to /api/vendor/receipt (simulated),
+ * but the receipt route will now enqueue the receipt for batch processing.
+ */
 router.post("/send", async (req, res) => {
-  // req: { commLogId, message }
-  const { commLogId } = req.body;
-  // Simulate async delivery with random result
+  const { commLogId, message } = req.body;
+  // simulate async delivery result
   setTimeout(async () => {
     const isSent = Math.random() < 0.9;
     try {
-      // update the comm log directly for simplicity
-      await CommLog.findByIdAndUpdate(commLogId, {
-        status: isSent ? "SENT" : "FAILED",
-        lastUpdated: new Date(),
-        attemptCount: 1
+      // Instead of updating DB here, call the receipt endpoint locally (simulated vendor callback)
+      // The receipt endpoint will enqueue the receipt for batch processing.
+      await fetch((process.env.VENDOR_CALLBACK_URL || "http://localhost:4000/api/vendor/receipt"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commLogId, status: isSent ? "SENT" : "FAILED" }),
+      }).catch(err => {
+        console.error("Vendor simulator callback failed:", err.message || err);
       });
-
-      // update campaign stats
-      const log = await CommLog.findById(commLogId);
-      if (log) {
-        const campaign = await Campaign.findById(log.campaignId);
-        if (campaign) {
-          if (isSent) campaign.stats.sent += 1;
-          else campaign.stats.failed += 1;
-          await campaign.save();
-        }
-      }
     } catch (err) {
       console.error("vendor simulator error", err.message);
     }
-  }, Math.random() * 2000 + 200); // 200-2200ms
+  }, Math.random() * 2000 + 200);
 
   res.json({ status: "ACCEPTED" });
 });
 
-// Realistic receipt endpoint (if an external vendor called back)
+/**
+ * Receipt endpoint - vendor calls this to report delivery result.
+ * Instead of immediately writing to DB, enqueue the receipt for batch processing by receiptWorker.
+ * Body: { commLogId, status } where status is "SENT" or "FAILED"
+ */
 router.post("/receipt", async (req, res) => {
-  const { commLogId, status } = req.body;
   try {
-    const isSent = status === "SENT";
-    await CommLog.findByIdAndUpdate(commLogId, { status: isSent ? "SENT" : "FAILED", lastUpdated: new Date() });
+    const { commLogId, status } = req.body;
+    if (!commLogId || !status) return res.status(400).json({ error: "commLogId and status required" });
 
-    const log = await CommLog.findById(commLogId);
-    if (log) {
-      const campaign = await Campaign.findById(log.campaignId);
-      if (campaign) {
-        if (isSent) campaign.stats.sent += 1;
-        else campaign.stats.failed += 1;
-        await campaign.save();
-      }
-    }
-    res.json({ ok: true });
+    // enqueue minimal receipt payload
+    const payload = JSON.stringify({ commLogId, status, ts: new Date().toISOString() });
+    await redis.lpush("receipts-queue", payload);
+
+    // return quickly to vendor
+    res.json({ ok: true, queued: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

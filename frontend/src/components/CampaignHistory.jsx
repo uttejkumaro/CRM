@@ -11,11 +11,35 @@ export default function CampaignHistory(){
   async function load(){
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/api/campaigns");
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": "Bearer " + token } : {};
+      const res = await fetch("http://localhost:4000/api/campaigns", { headers });
+      if (!res.ok) {
+        // Unauthorized or other error
+        const err = await res.json().catch(()=>({ error: res.statusText }));
+        if (res.status === 401) {
+          window.showToast?.("Unauthorized — please sign in (Dev login or Google)", { type: "error" });
+        } else {
+          window.showToast?.("Failed to load campaigns: " + (err.error || res.statusText), { type: "error" });
+        }
+        setList([]);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
-      setList(data);
-    } catch(e) { console.error(e); setList([]); }
-    setLoading(false);
+      // ensure we have an array
+      if (!Array.isArray(data)) {
+        setList([]);
+      } else {
+        setList(data);
+      }
+    } catch(e) {
+      console.error(e);
+      setList([]);
+      window.showToast?.("Failed to load campaigns: " + e.message, { type: "error" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(()=> {
@@ -44,37 +68,51 @@ export default function CampaignHistory(){
     setSelected(c);
     setLogs(null);
     try {
-      const res = await fetch(`http://localhost:4000/api/campaigns/${c._id}/logs`);
+      const token = localStorage.getItem("token");
+      const headers = token ? { "Authorization": "Bearer " + token } : {};
+      const res = await fetch(`http://localhost:4000/api/campaigns/${c._id}/logs`, { headers });
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({ error: res.statusText }));
+        window.showToast?.("Failed loading logs: " + (err.error || res.statusText), { type: "error" });
+        setLogs([]);
+        return;
+      }
       const data = await res.json();
-      setLogs(data);
-    } catch(e) {
+      setLogs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
       setLogs([]);
+      window.showToast?.("Failed to load logs: " + e.message, { type: "error" });
     }
   }
 
   async function retryLog(campaignId, logId) {
-    // confirmation dialog
     const ok = window.confirm("Retry delivery for this message? This will re-enqueue it for delivery.");
     if (!ok) return;
     try {
+      const token = localStorage.getItem("token");
+      const headers = { "Content-Type":"application/json", ...(token ? { "Authorization": "Bearer " + token } : {}) };
       const resp = await fetch(`http://localhost:4000/api/campaigns/${campaignId}/logs/${logId}/retry`, {
-        method: "POST", headers: { "Content-Type":"application/json" }
+        method: "POST", headers
       });
       const data = await resp.json();
-      if (data.ok) {
-        if (window.showToast) window.showToast("Retry enqueued", { type: "success" });
+      if (resp.ok && data.ok) {
+        window.showToast?.("Retry enqueued", { type: "success" });
         // refresh logs
-        const res = await fetch(`http://localhost:4000/api/campaigns/${campaignId}/logs`);
-        setLogs(await res.json());
+        const res = await fetch(`http://localhost:4000/api/campaigns/${campaignId}/logs`, { headers });
+        if (res.ok) setLogs(await res.json());
       } else {
-        if (window.showToast) window.showToast("Retry failed: " + (data.error || JSON.stringify(data)), { type: "error" });
+        window.showToast?.("Retry failed: " + (data.error || JSON.stringify(data)), { type: "error" });
       }
     } catch(err) {
-      if (window.showToast) window.showToast("Retry failed: " + err.message, { type: "error" });
+      console.error(err);
+      window.showToast?.("Retry failed: " + err.message, { type: "error" });
     }
   }
 
-  const shown = filter ? list.filter(c => (c.title||"").toLowerCase().includes(filter.toLowerCase())) : list;
+  const listArray = Array.isArray(list) ? list : [];
+
+  const shown = filter ? listArray.filter(c => (c.title||"").toLowerCase().includes(filter.toLowerCase())) : listArray;
 
   return (
     <div>
